@@ -35,7 +35,11 @@ var CustomizeJSWidgets = (function( api, $ ) { // eslint-disable-line no-unused-
 	component.extendWidgetControl = function extendWidgetControl() {
 		api.Widgets.WidgetControl.prototype.initialize = function initializeWidgetControl( id, options ) {
 			var control = this;
-			control.isCustomizeControl = options.params.widget_id_base && component.data.id_bases[ options.params.widget_id_base ];
+
+			// `params` property deprecated in v4.9
+			var params = options.params || options;
+
+			control.isCustomizeControl = params.widget_id_base && component.data.id_bases[ params.widget_id_base ];
 			if ( control.isCustomizeControl ) {
 				_.extend( control, component.WidgetControl.prototype );
 				return component.WidgetControl.prototype.initialize.call( control, id, options );
@@ -73,52 +77,55 @@ var CustomizeJSWidgets = (function( api, $ ) { // eslint-disable-line no-unused-
 		initialize: function( id, options ) {
 			var control = this, elementId, elementClass, availableWidget, widgetNumber, widgetControlWrapperMarkup;
 
+			// `params` property deprecated in v4.9
+			var params = options.params || options;
+
 			// @todo The arguments supplied via addWidget can just be ignored for Customize Widgets.
 
-			if ( ! options.params.widget_id ) {
+			if ( ! params.widget_id ) {
 				throw new Error( 'Missing widget_id param.' );
 			}
-			if ( ! options.params.widget_id_base ) {
+			if ( ! params.widget_id_base ) {
 				throw new Error( 'Missing widget_id_base param.' );
 			}
-			widgetNumber = parseInt( options.params.widget_id.replace( /^.+-/, '' ), 10 );
-			if ( options.params.widget_id_base + '-' + String( widgetNumber ) !== options.params.widget_id ) {
+			widgetNumber = parseInt( params.widget_id.replace( /^.+-/, '' ), 10 );
+			if ( params.widget_id_base + '-' + String( widgetNumber ) !== params.widget_id ) {
 				throw new Error( 'Mismatch between widget_id and widget_id_base.' );
 			}
 
-			availableWidget = api.Widgets.availableWidgets.findWhere( { id_base: options.params.widget_id_base } );
+			availableWidget = api.Widgets.availableWidgets.findWhere( { id_base: params.widget_id_base } );
 			if ( ! availableWidget ) {
 				throw new Error( 'Unrecognized id_base.' );
 			}
-			if ( ! options.params.type ) {
-				options.params.type = 'widget_form';
+			if ( ! params.type ) {
+				params.type = 'widget_form';
 			}
-			if ( 'widget_form' !== options.params.type ) {
+			if ( 'widget_form' !== params.type ) {
 				throw new Error( 'Type must be widget_form' );
 			}
-			if ( options.params.widget_control ) {
+			if ( params.widget_control ) {
 				throw new Error( 'The widget_control param must not be supplied. It is handled internally.' );
 			}
-			if ( options.params.widget_content ) {
+			if ( params.widget_content ) {
 				throw new Error( 'The widget_content param must not be supplied. It is handled internally.' );
 			}
 
-			if ( ! api.Widgets.formConstructor[ options.params.widget_id_base ] ) {
-				throw new Error( 'Missing formConstructor for ' + options.params.widget_id_base );
+			if ( ! api.Widgets.formConstructor[ params.widget_id_base ] ) {
+				throw new Error( 'Missing formConstructor for ' + params.widget_id_base );
 			}
 
 			elementId = 'customize-control-' + id.replace( /\[/g, '-' ).replace( /]/, '' );
 			elementClass = 'customize-control';
 			elementClass += ' customize-widget-control';
-			elementClass += ' customize-control-' + options.params.type;
-			elementClass += ' widget-' + options.params.widget_id_base;
-			options.params.content = '<li id="' + elementId + '" class="' + elementClass + '"></li>';
+			elementClass += ' customize-control-' + params.type;
+			elementClass += ' widget-' + params.widget_id_base;
+			params.content = '<li id="' + elementId + '" class="' + elementClass + '"></li>';
 
 			widgetControlWrapperMarkup = $.trim( $( '#widget-tpl-' + availableWidget.get( 'id' ) ).html() );
 			widgetControlWrapperMarkup = widgetControlWrapperMarkup.replace( /<[^<>]+>/g, function( m ) {
 				return m.replace( /__i__|%i%/g, widgetNumber );
 			} );
-			options.params.widget_control = widgetControlWrapperMarkup;
+			params.widget_control = widgetControlWrapperMarkup;
 
 			return originalInitialize.call( control, id, options );
 		},
